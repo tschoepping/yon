@@ -75,12 +75,15 @@ yon() {
 		esac
 	done
 
-	# check for at least one (remaining) argument
-	if [ $# -gt 0 ]; then
-		# set prompt
-		prompt=$*
-	else
-		retval=1
+	# check help and version flags
+	if [ $printhelp -eq 0 ] && [ $printversion -eq 0 ]; then
+		# check for at least one (remaining) argument
+		if [ $# -gt 0 ]; then
+			# set prompt
+			prompt=$*
+		else
+			retval=1
+		fi
 	fi
 
 	# check dependencies
