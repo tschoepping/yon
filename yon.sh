@@ -66,7 +66,7 @@ yon() {
 				;;
 			-r|--return-variable)
 				# save an clear return variable
-				returnvariable=$
+				returnvariable=$2
 				export "$returnvariable"=
 				shift 2
 				;;
