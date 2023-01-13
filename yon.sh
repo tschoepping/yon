@@ -1,5 +1,11 @@
 #!/bin/sh
 
+########################################################################
+# Copyright (c) 2023 T. Schöpping                                      #
+#                                                                      #
+# This file is provided under the MIT License with Exception           #
+########################################################################
+
 # Ask user for confirmation (yes or no) and store answer in shell variable 'YON'.
 # Usage: yon [options] [--] <question string>"
 yon() {
