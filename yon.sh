@@ -182,6 +182,7 @@ yon() {
 			if [ "$(echo "if ($dtime >= $timeout) 2 else 0;" | bc)" -eq 0 ]; then
 				retval=0
 			else
+				echo ""
 				retval=2
 			fi
 			if [ $retval -eq 2 ] && [ $defaultontimeout -ne 0 ]; then
