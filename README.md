@@ -62,15 +62,28 @@ fi
    >$ echo $?
    3
    ```
-5. three attempts with five second timeout and default answer, which is assumed on timeout
+5. custom return variable
    ```sh
-   >$ yon --default=yes --timeout=5 --attempts=3 --default-on-timeout -- Yes or No?
+   >$ yon --return-variable=myvar Yes or No?
+   Yes or No? [y/n]: y
+   >$ echo $?
+   0
+   >$ echo $YON
+   y
+   >$ echo $myvar
+   y
+   ```
+6. three attempts with five second timeout, custom return variable and default answer, which is assumed on timeout
+   ```sh
+   >$ yon --default=yes --timeout=5 --attempts=3 --return-variable=myvar --default-on-timeout -- Yes or No?
    Yes or No? [Y/n]: x
    Yes or No? [Y/n]: ?
    Yes or No? [Y/n]:
    >$ echo $?
    0
    >$ echo $YON
+   y
+   >$ echo $myvar
    y
    ```
 
