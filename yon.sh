@@ -11,10 +11,11 @@ yon() {
 	timeout=''
 	defaultontimeout=0
 	attempts=0
+	returnvariable=''
 	prompt=""
 
 	# parse options
-	if ! parsed=$(getopt --options=hvd:t:ea: --longoptions=help,version,default:,timeout:,default-on-timeout,attempts: -- "$@"); then
+	if ! parsed=$(getopt --options=hvd:t:ea:r: --longoptions=help,version,default:,timeout:,default-on-timeout,attempts:,return-variable: -- "$@"); then
 		retval=1
 	fi
 	eval set -- "$parsed"
@@ -61,6 +62,12 @@ yon() {
 				else
 					retval=1
 				fi
+				shift 2
+				;;
+			-r|--return-variable)
+				# save an clear return variable
+				returnvariable=$
+				export "$returnvariable"=
 				shift 2
 				;;
 			--)
@@ -122,6 +129,9 @@ yon() {
 		echo "    Has no effect if no timeout is specified (cf. -t/--timeout)."
 		echo " -h, --help"
 		echo "    Display this help text and exit."
+		echo " -r, --return-variable <varname>"
+		echo "    Store the answer flag ('y' or 'n') in the variable <varname>."
+		echo "    In contrast to the 'YON' shell variable, <varname> is reset to '' with each call of yon."
 		echo " -t, --timeout <val>"
 		echo "    Fractional number of seconds when the function will time out."
 		echo "    <val> must be a flating point value >= 0."
@@ -204,11 +214,17 @@ yon() {
 			y|Y)
 				# user confirmed
 				export YON='y'
+				if [ -n "$returnvariable" ]; then
+					export "$returnvariable"='y'
+				fi
 				return $retval
 				;;
 			n|N)
 				# user declined
 				export YON='n'
+				if [ -n "$returnvariable" ]; then
+					export "$returnvariable"='n'
+				fi
 				return $retval
 				;;
 			*)
