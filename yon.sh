@@ -1,12 +1,12 @@
 #!/bin/sh
 
-# Ask user for confirmation.
-# Usage: yon PROMPT [DEFAULT [TIMEOUT [TODEFAULT]]]
-#    or: yon OPTION
+# Ask user for confirmation (yes or no) and store answer in shell variable 'YON'.
+# Usage: yon [options] [--] <question string>"
 yon() {
 	# variable defauls
 	retval=0
 	printhelp=0
+	printversion=0
 	defaultanswer=''
 	timeout=''
 	defaultontimeout=0
@@ -14,7 +14,7 @@ yon() {
 	prompt=""
 
 	# parse options
-	if ! parsed=$(getopt --options=hd:t:ea: --longoptions=help,default:,timeout:,default-on-timeout,attempts: -- "$@"); then
+	if ! parsed=$(getopt --options=hvd:t:ea: --longoptions=help,version,default:,timeout:,default-on-timeout,attempts: -- "$@"); then
 		retval=1
 	fi
 	eval set -- "$parsed"
@@ -25,6 +25,10 @@ yon() {
 			-h|--help)
 				# set flag
 				printhelp=1
+				shift 1
+				;;
+			-v|--version)
+				printversion=1
 				shift 1
 				;;
 			-d|--default)
@@ -121,6 +125,8 @@ yon() {
 		echo "    Behaviour on timeout depends on the -e/--default-on-timeout flag:"
 		echo "      If the flag is specified, the default answer (cf. -d/--default) is assumed."
 		echo "      Otherwise, error code 2 is returned."
+		echo " -v, --version"
+		echo "    Display version information and exit."
 		echo ""
 		echo "Exit Status:"
 		echo "  0   User answered properly or the default answer was assumed on timeout."
@@ -128,6 +134,12 @@ yon() {
 		echo "  1   Some given options or arguments were invalid."
 		echo "  2   A timeout occurred, but no default answer was assumed."
 		echo "  3   The user did not provide a valid answer."
+		return $retval
+	fi
+
+	# check version flag
+	if [ $printversion -ne 0 ]; then
+		echo "yon version 1.0.0"
 		return $retval
 	fi
 
@@ -143,43 +155,36 @@ yon() {
 	while true; do
 		attempt=$(echo "$attempt + 1;" | bc)
 
-#		# ask user and read answer
-#		printf "$prompt"
-#		saved_tty_settings=$(stty -g)
-#		if [ -z "$timeout" ]; then
-#			stty -icanon min 1
-#		else
-#			stty -icanon min 0 time "$(echo "scale=0; ($timeout + 0.05) / 0.1" | bc)"
-#		fi
-#		eval "answer=\$(dd bs=1 count=1 2>/dev/null)"
-#		stty "$saved_tty_settings"
-#		if [ -n "$answer" ]; then
-#			echo ""
-#		fi
-
-		# call 'read'
+		# ask user and read answer
+		printf "%s" "$prompt"
+		saved_tty_settings=$(stty -g)
 		if [ -z "$timeout" ]; then
-			read -e -p "$prompt" -n 1 answer
+			stty -icanon min 1
 		else
-			read -e -p "$prompt" -n 1 -t "$timeout" answer
+			# round timeout to 1/10 second
+			timeout=$(echo "scale=1; ($timeout + 0.05) / 1;" | bc)
+			stty -icanon min 0 time "$(echo "scale=0; $timeout / 0.1;" | bc)"
+		fi
+		starttime=$(date +%s%N)
+		answer=$(dd bs=1 count=1 2>/dev/null)
+		endtime=$(date +%s%N)
+		stty "$saved_tty_settings"
+		if [ -n "$answer" ]; then
+			echo ""
 		fi
 
-		# evaluate 'read' exit code
-		retval=$?
-		if [ $retval -gt 128 ]; then
-			# timeout
-			echo ""
-			if [ $defaultontimeout -ne 0 ]; then
-				answer=$defaultanswer
+		# check for timeout
+		if [ -n "$timeout" ]; then
+			dtime=$(echo "scale=3; ($endtime - $starttime) / 10^9;" | bc)
+			if [ "$(echo "if ($dtime >= $timeout) 2 else 0;" | bc)" -eq 0 ]; then
 				retval=0
 			else
 				retval=2
 			fi
-		elif [ $retval -ne 0 ]; then
-			# incorrect variable assignment
-			retval=1
-		else
-			retval=0
+			if [ $retval -eq 2 ] && [ $defaultontimeout -ne 0 ]; then
+				answer=$defaultanswer
+				retval=0
+			fi
 		fi
 
 		# return on error
